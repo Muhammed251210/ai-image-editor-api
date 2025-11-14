@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Düzenleme ve Canlı Filtre (Gerçek API)</title>
+    <title>Canlı Filtre</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root{--bg:#111827;--panel:#1F2937;--blue:#3B82F6}
@@ -18,13 +18,6 @@
         #sliderLine{position:absolute;top:0;bottom:0;width:3px;background:rgba(255,255,255,0.8);border:2px solid var(--blue);left:50%;transform:translateX(-50%);pointer-events:none;z-index:15;}
         #handle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:var(--blue);border:4px solid #fff;z-index:20;cursor:ew-resize;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;font-weight:bold;display:none;}
         #slider{display:none;}
-        .chat-area{height:100%;display:flex;flex-direction:column;background:var(--panel);border-radius:12px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);}
-        .chat-messages{flex-grow:1;overflow-y:auto;padding-right:8px;}
-        .chat-messages::-webkit-scrollbar{width:6px;}
-        .chat-messages::-webkit-scrollbar-thumb{background-color:#4B5563;border-radius:3px;}
-        .chat-messages::-webkit-scrollbar-track{background:var(--panel);}
-        .user-message-bubble{background-color:#1D4ED8;color:white;border-radius:12px 12px 0 12px;padding:6px 10px;margin:4px 0;}
-        .system-message-bubble{background-color:#374151;color:#D1D5DB;border-radius:12px 12px 12px 0;padding:6px 10px;margin:4px 0;}
         .filter-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--blue);cursor:pointer;box-shadow:0 0 4px rgba(0,0,0,0.5);}
         .filter-range::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--blue);cursor:pointer;}
     </style>
@@ -32,8 +25,8 @@
 <body>
 <div class="container">
 <header class="text-center mb-8">
-<h1 class="text-4xl font-extrabold text-blue-400">AI Düzenleme ve Canlı Filtre</h1>
-<p class="text-gray-400 mt-2">Resminizi yükleyin ve gerçek API ile yapılan düzenlemeleri canlı filtrelerle karşılaştırın.</p>
+<h1 class="text-4xl font-extrabold text-blue-400">Canlı Filtre</h1>
+<p class="text-gray-400 mt-2">Resminizi yükleyin ve filtreleri canlı olarak uygulayın.</p>
 </header>
 <div class="grid-layout gap-6">
 <div class="space-y-6">
@@ -62,40 +55,26 @@
 <label for="sepia-range">Sepya (<span id="sepia-val">0</span>%)<input type="range" id="sepia-range" min="0" max="100" value="0" class="w-full filter-range"></label>
 <button id="reset-filters" disabled>Filtreleri Sıfırla</button>
 </div>
-<div class="chat-area p-4">
-<h2 class="text-xl font-bold mb-3 text-blue-300 border-b border-gray-700 pb-2">AI Düzenleme Sohbeti</h2>
-<div id="chat-messages" class="chat-messages"><div class="text-center p-4 bg-gray-700 text-gray-400">Lütfen başlamak için bir resim yükleyin.</div></div>
-<form id="chat-form" class="mt-4 flex space-x-3">
-<input type="text" id="input-prompt" placeholder="Örn: 'Rengi değiştir'">
-<button type="submit" id="send-button">Gönder</button>
-</form>
-</div>
 </div>
 </div>
 </div>
 <script>
-(async function(){
 const upload=document.getElementById('upload');
 const origImg=document.getElementById('origImg');
 const effectImg=document.getElementById('effectImg');
-const chatMessagesDiv=document.getElementById('chat-messages');
-const inputPrompt=document.getElementById('input-prompt');
-const sendButton=document.getElementById('send-button');
+const brightnessRange=document.getElementById('brightness-range');
+const contrastRange=document.getElementById('contrast-range');
+const saturateRange=document.getElementById('saturate-range');
+const sepiaRange=document.getElementById('sepia-range');
 const resetButton=document.getElementById('reset-filters');
-const chatFormEl=document.getElementById('chat-form');
-let isImageLoaded=false;
-let currentFilterSettings={brightness:100,contrast:100,saturate:100,sepia:0,hueRotate:0};
+const brightnessVal=document.getElementById('brightness-val');
+const contrastVal=document.getElementById('contrast-val');
+const saturateVal=document.getElementById('saturate-val');
+const sepiaVal=document.getElementById('sepia-val');
+let currentFilterSettings={brightness:100,contrast:100,saturate:100,sepia:0};
 
 function updateFilters(){
-    effectImg.style.filter=`brightness(${currentFilterSettings.brightness}%) contrast(${currentFilterSettings.contrast}%) saturate(${currentFilterSettings.saturate}%) sepia(${currentFilterSettings.sepia}%) hue-rotate(${currentFilterSettings.hueRotate}deg)`;
-}
-
-function addChatMessage(text,type='system'){
-    const div=document.createElement('div');
-    div.className=type==='user'?'user-message-bubble':'system-message-bubble';
-    div.textContent=text;
-    chatMessagesDiv.appendChild(div);
-    chatMessagesDiv.scrollTop=chatMessagesDiv.scrollHeight;
+    effectImg.style.filter=`brightness(${currentFilterSettings.brightness}%) contrast(${currentFilterSettings.contrast}%) saturate(${currentFilterSettings.saturate}%) sepia(${currentFilterSettings.sepia}%)`;
 }
 
 upload.addEventListener('change',e=>{
@@ -104,45 +83,36 @@ upload.addEventListener('change',e=>{
     const url=URL.createObjectURL(file);
     origImg.src=url;
     effectImg.src=url;
-    isImageLoaded=true;
-    addChatMessage('Resim yüklendi, AI ile düzenleme yapabilirsiniz.');
+    resetButton.disabled=false;
 });
 
-chatFormEl.addEventListener('submit',async e=>{
-    e.preventDefault();
-    if(!isImageLoaded || !inputPrompt.value.trim()) return;
-    const prompt=inputPrompt.value;
-    addChatMessage(prompt,'user');
-    inputPrompt.value='';
-
-    try{
-        addChatMessage('AI düzenliyor...','system');
-        const formData=new FormData();
-        formData.append('image',upload.files[0]);
-        formData.append('prompt',prompt);
-
-        const response=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{'Authorization':'Bearer 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'},body:formData});
-
-        const data=await response.json();
-        if(data.data && data.data[0].url){
-            effectImg.src=data.data[0].url;
-            addChatMessage('AI düzenlemesi tamamlandı.');
-        } else {
-            addChatMessage('API cevabı geçersiz.');
-        }
-    } catch(err){
-        console.error(err);
-        addChatMessage('API bağlantı hatası.');
-    }
+[brightnessRange,contrastRange,saturateRange,sepiaRange].forEach(rangeEl=>{
+    rangeEl.addEventListener('input',()=>{
+        currentFilterSettings.brightness=brightnessRange.value;
+        currentFilterSettings.contrast=contrastRange.value;
+        currentFilterSettings.saturate=saturateRange.value;
+        currentFilterSettings.sepia=sepiaRange.value;
+        brightnessVal.textContent=brightnessRange.value;
+        contrastVal.textContent=contrastRange.value;
+        saturateVal.textContent=saturateRange.value;
+        sepiaVal.textContent=sepiaRange.value;
+        updateFilters();
+    });
 });
 
 resetButton.addEventListener('click',()=>{
-    currentFilterSettings={brightness:100,contrast:100,saturate:100,sepia:0,hueRotate:0};
+    currentFilterSettings={brightness:100,contrast:100,saturate:100,sepia:0};
     effectImg.src=origImg.src;
+    brightnessRange.value=100;
+    contrastRange.value=100;
+    saturateRange.value=100;
+    sepiaRange.value=0;
+    brightnessVal.textContent='100';
+    contrastVal.textContent='100';
+    saturateVal.textContent='100';
+    sepiaVal.textContent='0';
     updateFilters();
-    addChatMessage('Filtreler sıfırlandı.');
 });
-})();
 </script>
 </body>
 </html>
