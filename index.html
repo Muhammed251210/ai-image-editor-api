@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tek Resim Düzenleyici - Kaymasız Mükemmel Hizalama</title>
+<title>Tek Resim Düzenleyici - AI Destekli ve Kaymasız</title>
 <style>
 /* --- Genel Stil --- */
 body { 
@@ -34,39 +34,38 @@ img {
     width:100%; 
     display:block; 
     pointer-events:none; 
+    opacity: 0; 
+    transition: opacity 0.5s; 
 }
 
-/* --- YENİ: Filtresiz Resim (ARKA PLAN) --- */
-/* Bu, her şeyin arkasında yer alan orijinal resim kopyasıdır */
+/* --- ARKA PLAN (Filtresiz Görünüm) --- */
 #original-img {
-    position: relative; /* Normal akışta kalır, z-index: 1 */
+    position: relative; 
     z-index: 1;
 }
 
-/* --- SOL TARAF (Filtreli Hali - ÖN PLAN) --- */
+/* --- ÖN PLAN (Filtreli/AI'lı Görünüm - Sol Taraf) --- */
 #filtered-container {
     position: absolute;
     top: 0;
     left: 0;
-    width: 50%; /* Sürgü ile kontrol edilir */
+    width: 50%; 
     height: 100%;
-    overflow: hidden;
+    overflow: hidden; 
     z-index: 5;
 }
 
-/* Filtreli resim kopyası. Kendi kapsayıcısının soluna hizalanır. */
-/* Kapsayıcının genişliği değişse bile, bu resim içerde sabit kalır. */
+/* Filtreli resim kopyası: Kaymasız hizalama için kritik ayar */
 #filtered-img {
     position: absolute; 
     top: 0;
     left: 0; 
-    /* YENİ VE KRİTİK AYAR: Kapsayıcı ne kadar kırpılırsa kırılsın, resmin tamamını göstermek için genişliğini 100% (yani konteyner genişliği değil, ana konteyner genişliği) olarak ayarlıyoruz */
     width: 100vw; 
-    max-width: 500px; /* Ana konteyner ile aynı max-width'te tut */
+    max-width: 500px; 
     height: 100%;
 }
 
-/* --- Sürgü Kolu --- */
+/* --- Sürgü Kolu (Kalıcı Çubuk) --- */
 #handle { 
     position:absolute; 
     top:0; 
@@ -82,7 +81,7 @@ img {
     display: block; 
 }
 
-/* --- Kontroller --- */
+/* --- Kontroller ve Chatbot Stilleri --- */
 .vignette {
     position: absolute;
     top: 0;
@@ -93,7 +92,6 @@ img {
     z-index: 15;
     mix-blend-mode: multiply; 
 }
-/* Diğer Kontrol Stilleri aynı kalır... */
 #upload { margin-top:10px; }
 #controls { 
     width:90vw; 
@@ -115,6 +113,43 @@ img {
 }
 #reset { background:#555; color:white; }
 #save { background:#28a745; color:white; }
+#chatbot-container {
+    width:90vw; 
+    max-width:500px; 
+    margin-top:30px; 
+    padding:10px; 
+    border:1px solid #444; 
+    border-radius:8px; 
+    background:#222;
+}
+#chat-messages {
+    height:150px; 
+    overflow-y:auto; 
+    margin-bottom:10px; 
+    padding:5px; 
+    border-bottom:1px solid #333; 
+    font-size:14px;
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+#chat-messages p { margin: 5px 0; }
+#chat-input {
+    width:calc(100% - 70px); 
+    padding:8px; 
+    border:none; 
+    border-radius:4px;
+}
+#chat-send {
+    width:60px; 
+    padding:8px; 
+    background:#007bff; 
+    color:white; 
+    border:none; 
+    border-radius:4px; 
+    margin-left:5px; 
+    cursor:pointer;
+}
+
 </style>
 </head>
 <body>
@@ -146,8 +181,8 @@ img {
     <label>Blur <span id="blurVal">0</span>px</label>
     <input type="range" id="blur" min="0" max="10" value="0">
 
-    <label>Opacity <span id="opVal">100</span>%</label>
-    <input type="range" id="opacity" min="10" max="100" value="100">
+    <label>Opacity <span id="opVal">10</span>%</label>
+    <input type="range" id="opacity" min="10" max="100" value="10">
 
     <label>Vignette <span id="vigVal">0</span>%</label>
     <input type="range" id="vignette" min="0" max="80" value="0">
@@ -159,9 +194,18 @@ img {
     <button id="save">Kaydet</button>
 </div>
 
+<div id="chatbot-container">
+    <div id="chat-messages">
+        <p style="color:#88ff88;">**AI**: Merhaba! Resmi değiştirmek için komutlarınızı yazın (Örn: Kontrast 150 yap, kedi çiz, Arka planı değiştir).</p>
+    </div>
+    <input type="text" id="chat-input" placeholder="Komutunuzu yazın..." >
+    <button id="chat-send">Gönder</button>
+</div>
+
+
 <script>
 const upload = document.getElementById("upload");
-const originalImg = document.getElementById("original-img"); // Yeni Arka Plan
+const originalImg = document.getElementById("original-img"); 
 const handle = document.getElementById("handle");
 const container = document.getElementById("container");
 const saveBtn = document.getElementById("save");
@@ -176,7 +220,6 @@ vignetteLayer.className = 'vignette';
 
 filteredContainer.appendChild(filteredImg);
 filteredContainer.appendChild(vignetteLayer);
-// filteredContainer'ı original-img'den sonra, handle'dan önce ekle
 container.insertBefore(filteredContainer, handle); 
 // ---------------------------------------------------
 
@@ -190,7 +233,7 @@ const vals = {
     hVal: document.getElementById("hVal"), sepVal: document.getElementById("sepVal"), blurVal: document.getElementById("blurVal"), 
     opVal: document.getElementById("opVal"), vigVal: document.getElementById("vigVal"), gammaVal: document.getElementById("gammaVal")
 };
-const defaultValues = { contrast: 100, brightness: 100, saturate: 100, hue: 0, sepia: 0, blur: 0, opacity: 100, vignette: 0, gamma: 1 };
+const defaultValues = { contrast: 100, brightness: 100, saturate: 100, hue: 0, sepia: 0, blur: 0, opacity: 10, vignette: 0, gamma: 1 };
 
 
 function applyFilters() {
@@ -242,14 +285,18 @@ upload.addEventListener('change', e => {
     if(!file) return;
     const url = URL.createObjectURL(file);
     
-    // Her iki kopyaya da aynı URL atanır
     originalImg.src = url;
     filteredImg.src = url; 
 
     originalImg.onload = () => {
+        originalImg.style.opacity = 1;
+        filteredImg.style.opacity = 1; 
+
         applyFilters();
         handle.style.left = '50%';
         filteredContainer.style.width = '50%';
+        
+        appendMessage("AI", "Resim yüklendi. Komutlarınızı bekliyorum.", '#88ff88');
     };
 });
 
@@ -260,6 +307,7 @@ document.getElementById('reset').addEventListener('click', () => {
     applyFilters();
     handle.style.left = '50%';
     filteredContainer.style.width = '50%';
+    appendMessage("AI", "Filtreler sıfırlandı.", '#88ff88');
 });
 
 saveBtn.addEventListener('click', () => {
@@ -270,13 +318,12 @@ saveBtn.addEventListener('click', () => {
     canvas.width = originalImg.naturalWidth;
     canvas.height = originalImg.naturalHeight;
 
-    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); // Orijinal resmi çiz
+    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); 
     
     const filterStr = `contrast(${filters.contrast.value}%) brightness(${filters.brightness.value}%) saturate(${filters.saturate.value}%) hue-rotate(${filters.hue.value}deg) sepia(${filters.sepia.value}%) blur(${filters.blur.value}px) opacity(${filters.opacity.value}%)`;
-    ctx.filter = filterStr; // Filtreleri ayarla
-    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); // Filtreliyi tekrar çiz
+    ctx.filter = filterStr; 
+    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); 
 
-    // Vinyet
     if (filters.vignette.value > 0) {
         const vigVal = filters.vignette.value / 100 * 0.8; 
         const gradient = ctx.createRadialGradient(
@@ -297,6 +344,151 @@ saveBtn.addEventListener('click', () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    appendMessage("AI", "Düzenlenmiş resim kaydedildi.", '#88ff88');
+});
+
+
+// ---------------------------------------------------
+// --- CHATBOT VE KOMUT İŞLEME ---
+// ---------------------------------------------------
+
+const chatInput = document.getElementById("chat-input");
+const chatSend = document.getElementById("chat-send");
+const chatMessages = document.getElementById("chat-messages");
+
+function appendMessage(sender, message, color) {
+    const p = document.createElement('p');
+    p.innerHTML = `<strong style="color:${color}">${sender}</strong>: ${message}`;
+    chatMessages.appendChild(p);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Filtre adlarını Türkçe'ye çevirme haritası
+const filterMap = {
+    "kontrast": "contrast", "parlaklık": "brightness", "doygunluk": "saturate", 
+    "hue": "hue", "renk": "hue", "sepia": "sepia", 
+    "bulanıklık": "blur", "blur": "blur", "opaklık": "opacity", 
+    "vinyet": "vignette", "gamma": "gamma"
+};
+
+function processCommand(command) {
+    const parts = command.toLowerCase().split(/\s+/);
+    const filterName = parts[0];
+    const action = parts[1];
+    
+    // 1. Filtre Komutlarını İşleme (Kontrast 150)
+    if (filterMap[filterName] && !isNaN(parseFloat(action))) {
+        const filterKey = filterMap[filterName];
+        const filterElement = filters[filterKey];
+        const value = parseFloat(action);
+        
+        const minValue = parseFloat(filterElement.min);
+        const maxValue = parseFloat(filterElement.max);
+
+        if (filterElement) {
+            const clampedValue = Math.min(Math.max(value, minValue), maxValue);
+            filterElement.value = clampedValue;
+            applyFilters();
+            return `✅ ${filterName} değeri ${clampedValue} olarak ayarlandı.`;
+        }
+    }
+    
+    if (command.toLowerCase() === 'sıfırla') {
+        document.getElementById('reset').click();
+        return "✅ Tüm filtre ayarları sıfırlandı.";
+    }
+
+    if (command.toLowerCase() === 'kaydet') {
+        document.getElementById('save').click();
+        return "Resim kaydediliyor...";
+    }
+
+    // 2. Gelişmiş AI Komutlarını İşleme (İçerik Değiştirme/Oluşturma)
+    if (command.toLowerCase().includes('ekle') || command.toLowerCase().includes('çiz') || command.toLowerCase().includes('değiştir') || command.toLowerCase().includes('yap')) {
+        return callWorkerAI(command);
+    }
+    
+    return "❌ Komut anlaşılamadı. Lütfen 'Kontrast 150' veya 'kedi çiz' gibi geçerli bir komut girin.";
+}
+
+// ---------------------------------------------------
+// --- CLOUDFLARE WORKERS AI BAĞLANTISI ---
+// ---------------------------------------------------
+
+function callWorkerAI(command) {
+    // 🚨 BURAYI KONTROL EDİN: Worker URL'si
+    const workerUrl = 'https://free-image-generation-api.muhammed251210.workers.dev/'; 
+
+    // Loading mesajı göster
+    appendMessage("AI", "🔄 Komutunuz Cloudflare Worker'a gönderiliyor... Lütfen bekleyin.", '#FFFF00');
+    
+    fetch(workerUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            prompt: command 
+        }),
+    })
+    .then(response => {
+        // HTTP hatalarını kontrol et
+        if (!response.ok) {
+             // Sunucudan gelen hata detayını yakala
+            return response.json().then(errorData => { 
+                throw new Error(errorData.error || `HTTP Hata Kodu: ${response.status}`); 
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.newImage) {
+            // Başarılı AI yanıtı
+            // Yeni AI resmini filteredImg'e atıyoruz.
+            filteredImg.src = data.newImage; 
+            
+            appendMessage("AI", `✅ AI Düzenlemesi tamamlandı: "${command}" uygulandı!`, '#88ff88');
+
+            filteredImg.onload = () => {
+                filteredImg.style.opacity = 1; 
+                originalImg.style.opacity = 1;
+                // Yeni resim yüklendiğinde filtreleri tekrar uygula (eğer varsa)
+                applyFilters();
+            };
+
+        } else {
+            // API'den dönen, ancak başarı bayrağı olmayan bir hata
+            appendMessage("AI", `❌ Hata: AI yanıtı başarısız oldu. Detay: ${data.error || 'Bilinmeyen Hata'}`, '#FF5555');
+        }
+    })
+    .catch(error => {
+        // Ağ veya fetch hatası
+        appendMessage("AI", `❌ Bağlantı Hatası: ${error.message}. Worker'ın çalıştığından emin olun.`, '#FF5555');
+        console.error('Fetch Error:', error);
+    });
+
+    return `AI komutu ('${command}') Workers AI tarafından işleniyor. Lütfen sonucu bekleyin.`;
+}
+
+
+chatSend.addEventListener('click', () => {
+    const command = chatInput.value.trim();
+    if (command) {
+        appendMessage("Siz", command, 'white');
+        const response = processCommand(command);
+        if (response) {
+            appendMessage("AI", response, '#88ff88');
+        }
+        chatInput.value = '';
+    }
+});
+
+// Enter tuşu ile gönderme
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // Varsayılan formu gönderme davranışını engelle
+        chatSend.click();
+    }
 });
 
 applyFilters();
