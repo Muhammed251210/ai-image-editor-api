@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tek Resim Düzenleyici - Mükemmel Hizalama ve Filtreleme</title>
+<title>Tek Resim Düzenleyici - Kaymasız Mükemmel Hizalama</title>
 <style>
 /* --- Genel Stil --- */
 body { 
@@ -34,14 +34,12 @@ img {
     width:100%; 
     display:block; 
     pointer-events:none; 
-    /* MAVİ EKRAN HATASINI ÇÖZEN DÜZELTME */
-    opacity: 0; 
-    transition: opacity 0.5s; 
 }
 
 /* --- YENİ: Filtresiz Resim (ARKA PLAN) --- */
+/* Bu, her şeyin arkasında yer alan orijinal resim kopyasıdır */
 #original-img {
-    position: relative; 
+    position: relative; /* Normal akışta kalır, z-index: 1 */
     z-index: 1;
 }
 
@@ -56,12 +54,15 @@ img {
     z-index: 5;
 }
 
-/* Filtreli resim kopyası: Mükemmel kaymasız hizalama için kritik */
+/* Filtreli resim kopyası. Kendi kapsayıcısının soluna hizalanır. */
+/* Kapsayıcının genişliği değişse bile, bu resim içerde sabit kalır. */
 #filtered-img {
     position: absolute; 
     top: 0;
     left: 0; 
-    width: 100%; /* Kapsayıcının (container) genişliği kadar yer kaplar */
+    /* YENİ VE KRİTİK AYAR: Kapsayıcı ne kadar kırpılırsa kırılsın, resmin tamamını göstermek için genişliğini 100% (yani konteyner genişliği değil, ana konteyner genişliği) olarak ayarlıyoruz */
+    width: 100vw; 
+    max-width: 500px; /* Ana konteyner ile aynı max-width'te tut */
     height: 100%;
 }
 
@@ -77,11 +78,11 @@ img {
     border-radius:3px; 
     z-index:10; 
     transform: translateX(-50%); 
-    opacity: 1; /* Daima görünür */
+    opacity: 1; 
     display: block; 
 }
 
-/* --- Vinyet ve Kontroller Diğer Stiller --- */
+/* --- Kontroller --- */
 .vignette {
     position: absolute;
     top: 0;
@@ -92,6 +93,7 @@ img {
     z-index: 15;
     mix-blend-mode: multiply; 
 }
+/* Diğer Kontrol Stilleri aynı kalır... */
 #upload { margin-top:10px; }
 #controls { 
     width:90vw; 
@@ -120,7 +122,7 @@ img {
 <input type="file" id="upload" accept="image/*" />
 
 <div id="container">
-    <img id="original-img" src="data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 500 300'%3E%3Crect width='500' height='300' fill='%23333'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23ccc'%3EResim Yükle%3C/text%3E%3C/svg%3E" alt="Filtresiz Resim" />
+    <img id="original-img" src="data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 500 300'%3E%3Crect width='500' height='300' fill='%23333'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23ccc'%3EFiltresiz Arka Plan%3C/text%3E%3C/svg%3E" alt="Filtresiz Resim" />
     
     <div id="handle"></div>
 </div>
@@ -159,7 +161,7 @@ img {
 
 <script>
 const upload = document.getElementById("upload");
-const originalImg = document.getElementById("original-img"); 
+const originalImg = document.getElementById("original-img"); // Yeni Arka Plan
 const handle = document.getElementById("handle");
 const container = document.getElementById("container");
 const saveBtn = document.getElementById("save");
@@ -174,6 +176,7 @@ vignetteLayer.className = 'vignette';
 
 filteredContainer.appendChild(filteredImg);
 filteredContainer.appendChild(vignetteLayer);
+// filteredContainer'ı original-img'den sonra, handle'dan önce ekle
 container.insertBefore(filteredContainer, handle); 
 // ---------------------------------------------------
 
@@ -193,8 +196,10 @@ const defaultValues = { contrast: 100, brightness: 100, saturate: 100, hue: 0, s
 function applyFilters() {
     const filterStr = `contrast(${filters.contrast.value}%) brightness(${filters.brightness.value}%) saturate(${filters.saturate.value}%) hue-rotate(${filters.hue.value}deg) sepia(${filters.sepia.value}%) blur(${filters.blur.value}px) opacity(${filters.opacity.value}%)`;
     
+    // Filtreler sadece SOL tarafa (filteredImg) uygulanır.
     filteredImg.style.filter = filterStr;
 
+    // Vinyet ayarı ve değer güncellemeleri
     const vigVal = filters.vignette.value;
     const shadowSize = vigVal * 1.5; 
     const opacityVal = vigVal / 100 * 0.8; 
@@ -237,14 +242,11 @@ upload.addEventListener('change', e => {
     if(!file) return;
     const url = URL.createObjectURL(file);
     
+    // Her iki kopyaya da aynı URL atanır
     originalImg.src = url;
     filteredImg.src = url; 
 
     originalImg.onload = () => {
-        // MAVİ EKRAN ÇÖZÜMÜ: Resimler yüklendikten sonra görünür hale gelir.
-        originalImg.style.opacity = 1;
-        filteredImg.style.opacity = 1; 
-
         applyFilters();
         handle.style.left = '50%';
         filteredContainer.style.width = '50%';
@@ -268,12 +270,13 @@ saveBtn.addEventListener('click', () => {
     canvas.width = originalImg.naturalWidth;
     canvas.height = originalImg.naturalHeight;
 
-    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); // Orijinal resmi çiz
     
     const filterStr = `contrast(${filters.contrast.value}%) brightness(${filters.brightness.value}%) saturate(${filters.saturate.value}%) hue-rotate(${filters.hue.value}deg) sepia(${filters.sepia.value}%) blur(${filters.blur.value}px) opacity(${filters.opacity.value}%)`;
-    ctx.filter = filterStr;
-    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
+    ctx.filter = filterStr; // Filtreleri ayarla
+    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); // Filtreliyi tekrar çiz
 
+    // Vinyet
     if (filters.vignette.value > 0) {
         const vigVal = filters.vignette.value / 100 * 0.8; 
         const gradient = ctx.createRadialGradient(
