@@ -1,0 +1,3 @@
+# Dotenv dosyan gizli tutulacak!
+backend/.env
+node_modules/
