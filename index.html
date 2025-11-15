@@ -1,118 +1,195 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Canlı Filtre</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root{--bg:#111827;--panel:#1F2937;--blue:#3B82F6}
-        body{font-family:ui-sans-serif,system-ui;-webkit-font-smoothing:antialiased;background:var(--bg);color:#E5E7EB;}
-        .container{max-width:1200px;margin:0 auto;padding:24px;}
-        .viewer{position:relative;width:100%;background:var(--panel);border-radius:12px;overflow:hidden;border:1px solid #374151;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1),0 4px 6px -2px rgba(0,0,0,0.05);min-height:300px;}
-        .viewer .stage{position:relative;width:100%;height:0;padding-bottom:66.66%;}
-        .viewer img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.8;transition:opacity 0.3s,filter 0.3s;}
-        .viewer img:not([src*="placehold.co"]){opacity:1;}
-        #effectImg{clip-path:inset(0 50% 0 0);z-index:10;}
-        #origImg{clip-path:inset(0 0 0 50%);z-index:5;}
-        #sliderLine{position:absolute;top:0;bottom:0;width:3px;background:rgba(255,255,255,0.8);border:2px solid var(--blue);left:50%;transform:translateX(-50%);pointer-events:none;z-index:15;}
-        #handle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:var(--blue);border:4px solid #fff;z-index:20;cursor:ew-resize;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;font-weight:bold;display:none;}
-        #slider{display:none;}
-        .filter-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--blue);cursor:pointer;box-shadow:0 0 4px rgba(0,0,0,0.5);}
-        .filter-range::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--blue);cursor:pointer;}
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Enhanced Before / After</title>
+<style>
+ body { margin:0; background:#111; display:flex; flex-direction:column; align-items:center; color:white; padding-bottom:40px; }
+ #container { position:relative; width:90vw; max-width:500px; aspect-ratio:1/1; overflow:hidden; border-radius:16px; margin-top:20px; }
+ img { width:100%; height:100%; object-fit:cover; pointer-events:none; }
+ #after { position:absolute; top:0; left:0; width:50%; height:100%; overflow:hidden; }
+ #handle { position:absolute; top:0; left:50%; width:6px; height:100%; background:white; cursor:ew-resize; border-radius:3px; }
+ #upload { margin-top:10px; }
+ #controls { width:90vw; max-width:500px; margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+ #controls label { font-size:14px; }
+ #controls input[type=range] { width:100%; }
+ #preset { margin-top:10px; padding:6px; border-radius:6px; }
+ #reset { margin-top:10px; padding:8px 14px; border-radius:8px; background:#333; color:white; cursor:pointer; }
+ #save { margin-top:10px; padding:8px 14px; border-radius:8px; background:#28a745; color:white; cursor:pointer; }
+</style>
 </head>
 <body>
-<div class="container">
-<header class="text-center mb-8">
-<h1 class="text-4xl font-extrabold text-blue-400">Canlı Filtre</h1>
-<p class="text-gray-400 mt-2">Resminizi yükleyin ve filtreleri canlı olarak uygulayın.</p>
-</header>
-<div class="grid-layout gap-6">
-<div class="space-y-6">
-<div class="controls flex flex-wrap gap-4 items-center p-4 bg-gray-800 rounded-xl shadow-inner">
-<label for="upload" class="cursor-pointer inline-flex items-center justify-center p-3 border-2 border-dashed border-blue-600 rounded-lg text-blue-300 hover:bg-gray-700 transition-colors">Resim Seç<input id="upload" type="file" accept="image/*" class="hidden"></label>
-<span id="image-status" class="text-sm text-gray-400">Başlamak için bir resim yükleyin.</span>
-</div>
-<div id="viewer" class="viewer">
-<div class="stage">
-<img id="effectImg" alt="Efektli görüntü">
-<img id="origImg" alt="Orijinal görüntü">
-<div id="sliderLine"></div>
-<div id="handle">⟷</div>
-<input id="slider" type="range" min="0" max="100" value="50">
-<span class="absolute top-4 left-4 text-white bg-black/60 px-3 py-1 rounded-lg font-bold text-xs">SONRASI</span>
-<span class="absolute top-4 right-4 text-white bg-black/60 px-3 py-1 rounded-lg font-bold text-xs">ÖNCESİ</span>
-</div>
-</div>
-</div>
-<div class="space-y-6">
-<div class="filter-panel p-4 bg-gray-800 rounded-xl shadow-lg">
-<h2 class="text-xl font-bold mb-3 text-blue-300 border-b border-gray-700 pb-2">Canlı Filtreler</h2>
-<label for="brightness-range">Parlaklık (<span id="brightness-val">100</span>%)<input type="range" id="brightness-range" min="0" max="200" value="100" class="w-full filter-range"></label>
-<label for="contrast-range">Kontrast (<span id="contrast-val">100</span>%)<input type="range" id="contrast-range" min="0" max="200" value="100" class="w-full filter-range"></label>
-<label for="saturate-range">Doygunluk (<span id="saturate-val">100</span>%)<input type="range" id="saturate-range" min="0" max="300" value="100" class="w-full filter-range"></label>
-<label for="sepia-range">Sepya (<span id="sepia-val">0</span>%)<input type="range" id="sepia-range" min="0" max="100" value="0" class="w-full filter-range"></label>
-<button id="reset-filters" disabled>Filtreleri Sıfırla</button>
-</div>
-</div>
-</div>
-</div>
-<script>
-const upload=document.getElementById('upload');
-const origImg=document.getElementById('origImg');
-const effectImg=document.getElementById('effectImg');
-const brightnessRange=document.getElementById('brightness-range');
-const contrastRange=document.getElementById('contrast-range');
-const saturateRange=document.getElementById('saturate-range');
-const sepiaRange=document.getElementById('sepia-range');
-const resetButton=document.getElementById('reset-filters');
-const brightnessVal=document.getElementById('brightness-val');
-const contrastVal=document.getElementById('contrast-val');
-const saturateVal=document.getElementById('saturate-val');
-const sepiaVal=document.getElementById('sepia-val');
-let currentFilterSettings={brightness:100,contrast:100,saturate:100,sepia:0};
 
-function updateFilters(){
-    effectImg.style.filter=`brightness(${currentFilterSettings.brightness}%) contrast(${currentFilterSettings.contrast}%) saturate(${currentFilterSettings.saturate}%) sepia(${currentFilterSettings.sepia}%)`;
+<input type="file" id="upload" accept="image/*" />
+
+<div id="controls">
+ <label>Kontrast <span id="cVal">120</span>%</label>
+ <input type="range" id="contrast" min="50" max="200" value="120">
+
+ <label>Parlaklık <span id="bVal">110</span>%</label>
+ <input type="range" id="brightness" min="50" max="200" value="110">
+
+ <label>Doygunluk <span id="sVal">130</span>%</label>
+ <input type="range" id="saturate" min="50" max="300" value="130">
+
+ <label>Hue Rotate <span id="hVal">15</span>°</label>
+ <input type="range" id="hue" min="0" max="360" value="15">
+
+ <label>Sepia <span id="sepVal">10</span>%</label>
+ <input type="range" id="sepia" min="0" max="100" value="10">
+
+ <label>Blur <span id="blurVal">0</span>px</label>
+ <input type="range" id="blur" min="0" max="10" value="0">
+
+ <label>Opacity <span id="opVal">100</span>%</label>
+ <input type="range" id="opacity" min="10" max="100" value="100">
+
+ <label>Vignette <span id="vigVal">0</span>%</label>
+ <input type="range" id="vignette" min="0" max="80" value="0">
+
+ <select id="preset">
+  <option value="none">Hazır Efektler</option>
+  <option value="warm">Warm</option>
+  <option value="cool">Cool</option>
+  <option value="hdr">HDR</option>
+  <option value="cinema">Cinema</option>
+  <option value="bw">Black & White</option>
+ </select>
+
+ <button id="reset">Sıfırla</button>
+ <button id="save">Kaydet</button>
+</div>
+
+<div id="container">
+ <img id="before" />
+ <div id="after"><img id="afterImg" /></div>
+ <div id="handle"></div>
+</div>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+const upload = document.getElementById("upload");
+const beforeImg = document.getElementById("before");
+const afterImg = document.getElementById("afterImg");
+const container = document.getElementById("container");
+const afterBox = document.getElementById("after");
+const handle = document.getElementById("handle");
+
+// Slider logic
+let active = false;
+const move = x => {
+ const rect = container.getBoundingClientRect();
+ const pos = Math.min(Math.max(x - rect.left, 0), rect.width);
+ afterBox.style.width = pos + "px";
+ handle.style.left = pos + "px";
+};
+handle.addEventListener("mousedown", () => active = true);
+window.addEventListener("mouseup", () => active = false);
+window.addEventListener("mousemove", e => active && move(e.clientX));
+handle.addEventListener("touchstart", () => active = true);
+window.addEventListener("touchend", () => active = false);
+window.addEventListener("touchmove", e => active && move(e.touches[0].clientX));
+
+let loadedURL = null;
+upload.addEventListener("change", e => {
+ if (loadedURL) URL.revokeObjectURL(loadedURL);
+ loadedURL = URL.createObjectURL(e.target.files[0]);
+ beforeImg.src = loadedURL;
+ afterImg.src = loadedURL;
+});
+
+// FILTER ELEMENTS
+const filters = {
+ contrast: document.getElementById("contrast"),
+ brightness: document.getElementById("brightness"),
+ saturate: document.getElementById("saturate"),
+ hue: document.getElementById("hue"),
+ sepia: document.getElementById("sepia"),
+ blur: document.getElementById("blur"),
+ opacity: document.getElementById("opacity"),
+ vignette: document.getElementById("vignette")
+};
+
+const vals = {
+ cVal: document.getElementById("cVal"),
+ bVal: document.getElementById("bVal"),
+ sVal: document.getElementById("sVal"),
+ hVal: document.getElementById("hVal"),
+ sepVal: document.getElementById("sepVal"),
+ blurVal: document.getElementById("blurVal"),
+ opVal: document.getElementById("opVal"),
+ vigVal: document.getElementById("vigVal")
+};
+
+function applyFilters() {
+ vals.cVal.textContent = filters.contrast.value;
+ vals.bVal.textContent = filters.brightness.value;
+ vals.sVal.textContent = filters.saturate.value;
+ vals.hVal.textContent = filters.hue.value;
+ vals.sepVal.textContent = filters.sepia.value;
+ vals.blurVal.textContent = filters.blur.value;
+ vals.opVal.textContent = filters.opacity.value;
+ vals.vigVal.textContent = filters.vignette.value;
+
+ afterImg.style.filter = `
+   contrast(${filters.contrast.value}%)
+   brightness(${filters.brightness.value}%)
+   saturate(${filters.saturate.value}%)
+   hue-rotate(${filters.hue.value}deg)
+   sepia(${filters.sepia.value}%)
+   blur(${filters.blur.value}px)
+   opacity(${filters.opacity.value}%)
+ `;
+ afterBox.style.boxShadow = `inset 0 0 ${filters.vignette.value}px rgba(0,0,0,0.8)`;
 }
 
-upload.addEventListener('change',e=>{
-    const file=e.target.files[0];
-    if(!file) return;
-    const url=URL.createObjectURL(file);
-    origImg.src=url;
-    effectImg.src=url;
-    resetButton.disabled=false;
+Object.values(filters).forEach(el => el.addEventListener("input", applyFilters));
+
+// PRESETS
+const preset = document.getElementById("preset");
+preset.addEventListener("change", () => {
+ switch(preset.value){
+  case "warm":
+   filters.hue.value = 20;
+   filters.saturate.value = 150;
+   break;
+  case "cool":
+   filters.hue.value = 200;
+   filters.brightness.value = 120;
+   break;
+  case "hdr":
+   filters.contrast.value = 180;
+   filters.brightness.value = 130;
+   filters.saturate.value = 160;
+   break;
+  case "cinema":
+   filters.sepia.value = 30;
+   filters.vignette.value = 40;
+   break;
+  case "bw":
+   filters.saturate.value = 0;
+   break;
+ }
+ applyFilters();
 });
 
-[brightnessRange,contrastRange,saturateRange,sepiaRange].forEach(rangeEl=>{
-    rangeEl.addEventListener('input',()=>{
-        currentFilterSettings.brightness=brightnessRange.value;
-        currentFilterSettings.contrast=contrastRange.value;
-        currentFilterSettings.saturate=saturateRange.value;
-        currentFilterSettings.sepia=sepiaRange.value;
-        brightnessVal.textContent=brightnessRange.value;
-        contrastVal.textContent=contrastRange.value;
-        saturateVal.textContent=saturateRange.value;
-        sepiaVal.textContent=sepiaRange.value;
-        updateFilters();
-    });
+// RESET
+const resetBtn = document.getElementById("reset");
+resetBtn.addEventListener("click", () => {
+ Object.entries(filters).forEach(([k,v])=>{
+  v.value = v.defaultValue;
+ });
+ preset.value = "none";
+ applyFilters();
 });
 
-resetButton.addEventListener('click',()=>{
-    currentFilterSettings={brightness:100,contrast:100,saturate:100,sepia:0};
-    effectImg.src=origImg.src;
-    brightnessRange.value=100;
-    contrastRange.value=100;
-    saturateRange.value=100;
-    sepiaRange.value=0;
-    brightnessVal.textContent='100';
-    contrastVal.textContent='100';
-    saturateVal.textContent='100';
-    sepiaVal.textContent='0';
-    updateFilters();
-});
-</script>
-</body>
-</html>
+// SAVE
+const saveBtn = document.getElementById("save");
+saveBtn.addEventListener("click", () => {
+ const canvas = document.getElementById("canvas");
+ const ctx = canvas.getContext("2d");
+ canvas.width = beforeImg.naturalWidth;
+ canvas.height = beforeImg.naturalHeight;
+ ctx.filter = afterImg.style.filter;
