@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "openai": "^4.22.1",
-    "formidable": "^4.2.0"
+    "formidable": "^4.2.2"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
