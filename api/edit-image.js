@@ -1,16 +1,12 @@
 import { Configuration, OpenAIApi } from "openai";
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_API_KEY) return res.status(500).json({ error: "Server misconfigured: API key missing" });
+  if (!OPENAI_API_KEY) return res.status(500).json({ error: "API key missing" });
 
   try {
     const formidable = (await import("formidable")).default;
@@ -33,12 +29,11 @@ export default async function handler(req, res) {
         mask: maskFile?.filepath,
         prompt,
         n: 1,
-        size: "512x512",
+        size: "512x512"
       });
 
       res.status(200).json({ url: imageResponse.data.data[0].url });
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message || "Unknown server error" });
