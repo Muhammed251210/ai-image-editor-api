@@ -1,34 +1,53 @@
-import OpenAI from "openai";
-import formidable from "formidable";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-export const config = { api: { bodyParser: false } };
+import { Configuration, OpenAIApi } from "openai";
 
 export default async function handler(req, res) {
-    if(req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-    const form = formidable({ multiples: false });
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+  if (!OPENAI_API_KEY) {
+    return res.status(500).json({ error: "Server misconfigured: API key missing" });
+  }
+
+  try {
+    // FormData veya multipart parsing
+    const formidable = (await import("formidable")).default;
+    const form = new formidable.IncomingForm();
 
     form.parse(req, async (err, fields, files) => {
-        if(err) return res.status(500).json({ error: err.message });
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Form parse error" });
+      }
 
-        try {
-            const imageFile = files.image.filepath || files.image.file;
-            const maskFile = files.mask.filepath || files.mask.file;
+      const prompt = fields.prompt;
+      const originalFile = files.image;
+      const maskFile = files.mask;
 
-            const response = await openai.images.edit({
-                model: "gpt-image-1",
-                image: imageFile,
-                mask: maskFile,
-                prompt: fields.prompt,
-                size: "512x512",
-            });
+      if (!prompt || !originalFile) {
+        return res.status(400).json({ error: "Missing prompt or image" });
+      }
 
-            res.status(200).json({ url: response.data[0].url });
-        } catch(e) {
-            console.error(e);
-            res.status(500).json({ error: e.message });
-        }
+      const configuration = new Configuration({ apiKey: OPENAI_API_KEY });
+      const openai = new OpenAIApi(configuration);
+
+      // OpenAI Image Edit request
+      const imageResponse = await openai.images.edit({
+        image: originalFile.filepath,
+        mask: maskFile?.filepath,
+        prompt,
+        n: 1,
+        size: "512x512",
+      });
+
+      const newImageUrl = imageResponse.data.data[0].url;
+      res.status(200).json({ url: newImageUrl });
     });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message || "Unknown server error" });
+  }
 }
