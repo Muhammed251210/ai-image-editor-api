@@ -1,0 +1,14 @@
+{
+  "name": "image-editor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Nothing to build for static site'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "openai": "^4.22.1",
+    "formidable": "^3.6.4"
+  }
+}
