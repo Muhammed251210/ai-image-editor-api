@@ -8,6 +8,7 @@
     "start": "vercel dev"
   },
   "dependencies": {
-    "openai": "^4.22.1"
+    "openai": "^4.22.1",
+    "formidable": "^3.3.0"
   }
 }
