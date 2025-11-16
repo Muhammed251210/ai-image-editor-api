@@ -139,360 +139,260 @@
             <input type="range" id="blur" min="0" max="10" value="0" step="0.2">
         </div>
     </div>
-    
     <script>
-    // --- Filtreler ve değişkenler ---
-    const filters = {
-        contrast: document.getElementById('contrast'),
-        brightness: document.getElementById('brightness'),
-        saturate: document.getElementById('saturate'),
-        hue: document.getElementById('hue'),
-        sepia: document.getElementById('sepia'),
-        blur: document.getElementById('blur'),
-    };
-    const defaultValues = {
-        contrast: 100,
-        brightness: 100,
-        saturate: 100,
-        hue: 0,
-        sepia: 0,
-        blur: 0,
-    };
+// --- Filtreler ve değişkenler ---
+const filters = {
+    contrast: document.getElementById('contrast'),
+    brightness: document.getElementById('brightness'),
+    saturate: document.getElementById('saturate'),
+    hue: document.getElementById('hue'),
+    sepia: document.getElementById('sepia'),
+    blur: document.getElementById('blur'),
+};
+const defaultValues = {
+    contrast: 100,
+    brightness: 100,
+    saturate: 100,
+    hue: 0,
+    sepia: 0,
+    blur: 0,
+};
 
-    const upload = document.getElementById('upload');
-    const container = document.getElementById('container');
-    const originalImg = document.getElementById('originalImg');
-    const filteredImg = document.getElementById('filteredImg');
-    const filteredContainer = document.getElementById('filteredContainer');
-    const handle = document.getElementById('handle');
-    const lens = document.getElementById('lens');
-    const lensImg = document.getElementById('lensImg');
-    const modeBtn = document.getElementById('modeBtn');
+const upload = document.getElementById('upload');
+const container = document.getElementById('container');
+const originalImg = document.getElementById('originalImg');
+const filteredImg = document.getElementById('filteredImg');
+const filteredContainer = document.getElementById('filteredContainer');
+const handle = document.getElementById('handle');
+const lens = document.getElementById('lens');
+const lensImg = document.getElementById('lensImg');
+const modeBtn = document.getElementById('modeBtn');
 
-    let lensMode = false;
+let lensMode = false;
 
-    function applyFilters(){
-        const filterStr = 
-            `contrast(${filters.contrast.value}%)
-            brightness(${filters.brightness.value}%)
-            saturate(${filters.saturate.value}%)
-            hue-rotate(${filters.hue.value}deg)
-            sepia(${filters.sepia.value}%)
-            blur(${filters.blur.value}px)
-        `.replace(/\s+/g, ' ');
-        filteredImg.style.filter = filterStr;
-        lensImg.style.filter = filterStr;
-    }
-    Object.values(filters).forEach(el => el.addEventListener("input", applyFilters));
+function applyFilters() {
+    const filterStr = `
+        contrast(${filters.contrast.value}%)
+        brightness(${filters.brightness.value}%)
+        saturate(${filters.saturate.value}%)
+        hue-rotate(${filters.hue.value}deg)
+        sepia(${filters.sepia.value}%)
+        blur(${filters.blur.value}px)
+    `.replace(/\s+/g, ' ');
+    filteredImg.style.filter = filterStr;
+    lensImg.style.filter = filterStr;
+}
+Object.values(filters).forEach(el => el.addEventListener("input", applyFilters));
 
-    // Çubuk ve mouse hareketleri:
-    let isDragging = false;
-    function moveHandle(clientX) {
-        const rect = container.getBoundingClientRect();
-        const offsetX = Math.min(Math.max(clientX - rect.left, 0), rect.width);
-        handle.style.left = `${offsetX}px`;
-        filteredContainer.style.width = `${offsetX}px`;
-    }
-    handle.addEventListener('mousedown', () => isDragging = true);
-    document.addEventListener('mouseup', () => isDragging = false);
-    document.addEventListener('mousemove', e => { if (isDragging) moveHandle(e.clientX); });
-    handle.addEventListener('touchstart', e => { isDragging = true; e.preventDefault(); });
-    window.addEventListener('touchend', () => isDragging = false);
-    window.addEventListener('touchmove', e => { if (isDragging) moveHandle(e.touches[0].clientX); });
+// Çubuk ve mouse hareketleri:
+let isDragging = false;
+function moveHandle(clientX) {
+    const rect = container.getBoundingClientRect();
+    const offsetX = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+    handle.style.left = `${offsetX}px`;
+    filteredContainer.style.width = `${offsetX}px`;
+}
+handle.addEventListener('mousedown', () => isDragging = true);
+document.addEventListener('mouseup', () => isDragging = false);
+document.addEventListener('mousemove', e => { if (isDragging) moveHandle(e.clientX); });
+handle.addEventListener('touchstart', e => { isDragging = true; e.preventDefault(); });
+window.addEventListener('touchend', () => isDragging = false);
+window.addEventListener('touchmove', e => { if (isDragging) moveHandle(e.touches[0].clientX); });
 
-    // Resim yüklenince hem filtreli hem lens img boyutunu güncelle:
-    function updateLensImageSize() {
-        // boyutu lens'de %100 -- object-fit ile yetiyor
-        lensImg.style.width = "100%";
-        lensImg.style.height = "100%";
-    }
-    upload.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        originalImg.src = url;
-        filteredImg.src = url;
-        lensImg.src = url;
-        originalImg.onload = () => {
-            const renderedWidth = originalImg.offsetWidth;
-            const renderedHeight = originalImg.offsetHeight;
-            filteredImg.style.width = renderedWidth + 'px';
-            filteredImg.style.height = renderedHeight + 'px';
-            updateLensImageSize();
-            applyFilters();
-            handle.style.left = '50%';
-            filteredContainer.style.width = '50%';
-        };
-    });
-
-    // Sıfırlama:
-    document.getElementById('reset').addEventListener('click', () => {
-        Object.keys(filters).forEach(key => { filters[key].value = defaultValues[key]; });
+// Resim yüklenince hem filtreli hem lens img boyutunu güncelle:
+function updateLensImageSize() {
+    lensImg.style.width = "100%";
+    lensImg.style.height = "100%";
+}
+upload.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    originalImg.src = url;
+    filteredImg.src = url;
+    lensImg.src = url;
+    originalImg.onload = () => {
+        filteredImg.style.width = originalImg.offsetWidth + 'px';
+        filteredImg.style.height = originalImg.offsetHeight + 'px';
+        updateLensImageSize();
         applyFilters();
         handle.style.left = '50%';
         filteredContainer.style.width = '50%';
+    };
+});
+
+// Sıfırlama:
+document.getElementById('reset').addEventListener('click', () => {
+    Object.keys(filters).forEach(key => { filters[key].value = defaultValues[key]; });
+    applyFilters();
+    handle.style.left = '50%';
+    filteredContainer.style.width = '50%';
+    updateLensImageSize();
+});
+
+// Mod değiştirme (lens/çubuk)
+modeBtn.addEventListener('click', () => {
+    lensMode = !lensMode;
+    if (lensMode) {
+        lens.style.display = 'block';
+        handle.style.display = 'none';
+        filteredContainer.style.opacity = '0';
+        modeBtn.textContent = 'Çubuk Modu';
         updateLensImageSize();
-    });
-
-    // Mod değiştirme (lens/çubuk)
-    modeBtn.addEventListener('click', () => {
-        lensMode = !lensMode;
-        if (lensMode) {
-            lens.style.display = 'block';
-            handle.style.display = 'none';
-            filteredContainer.style.opacity = '0';
-            modeBtn.textContent = 'Çubuk Modu';
-            updateLensImageSize();
-        } else {
-            lens.style.display = 'none';
-            handle.style.display = 'block';
-            filteredContainer.style.opacity = '1';
-            filteredContainer.style.width = '50%';
-            modeBtn.textContent = 'Lens Modu';
-        }
-    });
-
-    // Lens'in doğru koordinatıyla pozisyonunu ayarla:
-    function moveLens(clientX, clientY) {
-        const rect = container.getBoundingClientRect();
-        const lensSize = lens.offsetWidth;
-        let x = clientX - rect.left - lensSize / 2;
-        let y = clientY - rect.top - lensSize / 2;
-        x = Math.max(0, Math.min(x, rect.width - lensSize));
-        y = Math.max(0, Math.min(y, rect.height - lensSize));
-        lens.style.left = `${x}px`;
-        lens.style.top = `${y}px`;
-        // DÜZELTME: lens içindeki img'yi lens pozisyonuna göre -x, -y ile kaydır
-        lensImg.style.left = `${-x}px`;
-        lensImg.style.top = `${-y}px`;
-        // img boyutları lens boyutu ile aynı/veya %100
+    } else {
+        lens.style.display = 'none';
+        handle.style.display = 'block';
+        filteredContainer.style.opacity = '1';
+        filteredContainer.style.width = '50%';
+        modeBtn.textContent = 'Lens Modu';
     }
-    container.addEventListener('mousemove', e => { if (lensMode) moveLens(e.clientX, e.clientY); });
-    container.addEventListener('touchmove', e => {
-        if (lensMode && e.touches.length > 0) {
-            e.preventDefault();
-            moveLens(e.touches[0].clientX, e.touches[0].clientY);
-        }
-    });
+});
 
-    // Kaydet butonu:
-    document.getElementById('save').addEventListener('click', () => {
-        if (!originalImg.src || originalImg.src.startsWith('data:image/svg')) {
-            console.error("Lütfen önce bir resim yükleyin.");
-            return;
+// Lens hareketi:
+function moveLens(clientX, clientY) {
+    const rect = container.getBoundingClientRect();
+    const lensSize = lens.offsetWidth;
+    let x = clientX - rect.left - lensSize / 2;
+    let y = clientY - rect.top - lensSize / 2;
+    x = Math.max(0, Math.min(x, rect.width - lensSize));
+    y = Math.max(0, Math.min(y, rect.height - lensSize));
+    lens.style.left = `${x}px`;
+    lens.style.top = `${y}px`;
+    lensImg.style.left = `${-x}px`;
+    lensImg.style.top = `${-y}px`;
+}
+container.addEventListener('mousemove', e => { if (lensMode) moveLens(e.clientX, e.clientY); });
+container.addEventListener('touchmove', e => {
+    if (lensMode && e.touches.length > 0) {
+        e.preventDefault();
+        moveLens(e.touches[0].clientX, e.touches[0].clientY);
+    }
+});
+
+// Kaydet butonu:
+document.getElementById('save').addEventListener('click', () => {
+    if (!originalImg.src || originalImg.src.startsWith('data:image/svg')) {
+        console.error("Lütfen önce bir resim yükleyin.");
+        return;
+    }
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = originalImg.naturalWidth;
+    canvas.height = originalImg.naturalHeight;
+    const filterStr = `
+        contrast(${filters.contrast.value}%)
+        brightness(${filters.brightness.value}%)
+        saturate(${filters.saturate.value}%)
+        hue-rotate(${filters.hue.value}deg)
+        sepia(${filters.sepia.value}%)
+        blur(${filters.blur.value}px)
+    `.replace(/\s+/g, ' ');
+    ctx.filter = filterStr;
+    ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
+    const dataURL = canvas.toDataURL("image/jpeg", 0.9);
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = 'duzenlenmis_resim.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    console.log("Düzenlenmiş resim kaydedildi.");
+});
+
+applyFilters();
+
+// --- AI Chatbot ve Düzenleme ---
+const aiPromptInput = document.getElementById('aiPrompt');
+const sendPromptBtn = document.getElementById('sendPromptBtn');
+const chatOutput = document.getElementById('chatOutput');
+const aiResultImg = document.getElementById('aiResultImg');
+const saveAiResultBtn = document.getElementById('saveAiResultBtn');
+
+function addMessage(message, type) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${type}-msg`;
+    msgDiv.textContent = message;
+    chatOutput.appendChild(msgDiv);
+    chatOutput.scrollTop = chatOutput.scrollHeight;
+}
+
+// AI düzenleme isteği
+async function sendImageEditRequest(prompt) {
+    if (!upload.files[0]) {
+        addMessage("Lütfen önce bir resim yükleyin.", "ai");
+        return;
+    }
+
+    addMessage("İsteğiniz işleniyor...", "ai");
+    sendPromptBtn.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('image', upload.files[0]);
+        formData.append('mask', createMaskFile());
+        formData.append('prompt', prompt);
+
+        const response = await fetch('/api/edit-image', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            aiResultImg.src = data.url;
+            aiResultImg.style.display = 'block';
+            saveAiResultBtn.style.display = 'block';
+            addMessage("Düzenleme tamamlandı. Yeni resim aşağıdadır.", "ai");
+        } else {
+            addMessage(`Hata: ${data.error}`, "ai");
         }
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = originalImg.naturalWidth;
-        canvas.height = originalImg.naturalHeight;
-        const filterStr = `
-            contrast(${filters.contrast.value}%)
-            brightness(${filters.brightness.value}%)
-            saturate(${filters.saturate.value}%)
-            hue-rotate(${filters.hue.value}deg)
-            sepia(${filters.sepia.value}%)
-            blur(${filters.blur.value}px)
-        `.replace(/\s+/g, ' ');
-        ctx.filter = filterStr;
-        ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
-        const dataURL = canvas.toDataURL("image/jpeg", 0.9);
+    } catch (err) {
+        addMessage(`Beklenmedik hata: ${err.message}`, "ai");
+        console.error(err);
+    } finally {
+        sendPromptBtn.disabled = false;
+    }
+}
+
+// Basit mask dosyası oluşturma
+function createMaskFile() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width/2, canvas.height); // sol yarıyı şeffaf
+    const blob = new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    return new File([blob], 'mask.png', { type: 'image/png' });
+}
+
+sendPromptBtn.addEventListener('click', () => {
+    const prompt = aiPromptInput.value.trim();
+    if (prompt) {
+        addMessage(prompt, 'user');
+        sendImageEditRequest(prompt);
+        aiPromptInput.value = '';
+    }
+});
+
+aiPromptInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendPromptBtn.click();
+});
+
+// AI sonucu kaydet
+saveAiResultBtn.addEventListener('click', () => {
+    if (aiResultImg.src) {
         const a = document.createElement('a');
-        a.href = dataURL;
-        a.download = 'duzenlenmis_resim.jpg';
+        a.href = aiResultImg.src;
+        a.download = 'ai_duzenlenmis_resim.png';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        console.log("Düzenlenmiş resim kaydedildi.");
-    });
-
-    applyFilters();
-        // --- YZ Chatbot ve Düzenleme İşlevi ---
-
-    const aiPromptInput = document.getElementById('aiPrompt');
-    const sendPromptBtn = document.getElementById('sendPromptBtn');
-    const chatOutput = document.getElementById('chatOutput');
-    const aiResultImg = document.getElementById('aiResultImg');
-    const saveAiResultBtn = document.getElementById('saveAiResultBtn');
-    
-    // NOT: API anahtarını artık HTML içinde TUTMUYORUZ. Sunucu tarafı endpoint kullanacağız.
-    // const OPENAI_API_KEY = 'sk???'; // <<< KALDIRILDI
-
-    function addMessage(message, type) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${type}-msg`;
-        msgDiv.textContent = message;
-        chatOutput.appendChild(msgDiv);
-        chatOutput.scrollTop = chatOutput.scrollHeight;
     }
+});
+</script>
 
-    // Canvas'tan PNG Maskesi Oluşturma İşlevi
-    function createMaskFromHandle() {
-        const rect = container.getBoundingClientRect();
-        const maskWidth = filteredContainer.offsetWidth; // Filtreli alanın genişliği
-        
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Canvas boyutlarını orijinal resim boyutuna göre ayarlayın
-        canvas.width = originalImg.naturalWidth;
-        canvas.height = originalImg.naturalHeight;
-        
-        // 1. Tüm alanı beyaz yap (değiştirilmeyecek alan)
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // 2. Değiştirilecek maske alanını ŞEFFAF (transparent) yapın
-        // Varsayımı: Filtreli alan (sol taraf) değiştirilecek alandır.
-        
-        // Hesaplama: Rendered (görünen) genişlikteki oranın doğal genişliğe aktarılması
-        const proportion = maskWidth / rect.width;
-        const naturalMaskWidth = canvas.width * proportion;
-        
-        ctx.clearRect(0, 0, naturalMaskWidth, canvas.height);
-        
-        // 3. PNG verisini döndür
-        return new Promise((resolve) => {
-            canvas.toBlob((blob) => {
-                resolve(blob);
-            }, 'image/png');
-        });
-    }
-
-    // Yardımcı: Blob -> base64 (dataURL'den base64 kısmını döndürür)
-    function blobToBase64NoPrefix(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const result = reader.result;
-                // result: data:image/png;base64,AAAA...
-                const parts = result.split(',');
-                resolve(parts[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    }
-
-    // Yardımcı: Orijinal resmi fetch ile blob alıp base64'e çevir
-    async function imageUrlToBase64NoPrefix(url) {
-        // Eğer src zaten data URL ise doğrudan prefix'i kaldır
-        if (url.startsWith('data:')) {
-            return url.split(',')[1];
-        }
-        const resp = await fetch(url);
-        const blob = await resp.blob();
-        return await blobToBase64NoPrefix(blob);
-    }
-
-    // Ana Düzenleme İşlevi (SUNUCUYA GÖNDERİR — HTML içinde API KEY YOK)
-    async function sendImageEditRequest(prompt) {
-        if (!originalImg.src || originalImg.src.includes('dummyimage')) {
-            addMessage("Lütfen önce bir resim yükleyin.", "ai");
-            return;
-        }
-
-        addMessage("İsteğiniz işleniyor...", "ai");
-        sendPromptBtn.disabled = true;
-
-        try {
-            // 1. Orijinal resmi base64 al
-            const originalBase64 = await imageUrlToBase64NoPrefix(originalImg.src);
-
-            // 2. Maske Blob'unu Canvas'tan oluştur ve base64e çevir
-            const maskBlob = await createMaskFromHandle();
-            const maskBase64 = await blobToBase64NoPrefix(maskBlob);
-
-            // 3. Sunucuya JSON ile gönder
-            const response = await fetch('/api/edit-image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    prompt,
-                    imageBase64: originalBase64,
-                    maskBase64: maskBase64,
-                    size: '512x512'
-                })
-            });
-
-            const data = await response.json();
-
-            // OpenAI'den gelen farklı şekillerde olabilir: b64_json veya url
-            if (response.ok) {
-                // 1) Eğer b64_json varsa kullan
-                try {
-                    const b64 = data.data?.[0]?.b64_json;
-                    if (b64) {
-                        aiResultImg.src = "data:image/png;base64," + b64;
-                        aiResultImg.style.display = 'block';
-                        saveAiResultBtn.style.display = 'block';
-                        addMessage("Düzenleme tamamlandı. Yeni resim aşağıdadır.", "ai");
-                        return;
-                    }
-                } catch (e) { /* yoksa diğer yola bak */ }
-
-                // 2) Eğer url varsa kullan (ör. eski DALL·E response)
-                const url = data.data?.[0]?.url || data.url;
-                if (url) {
-                    aiResultImg.src = url;
-                    aiResultImg.style.display = 'block';
-                    saveAiResultBtn.style.display = 'block';
-                    addMessage("Düzenleme tamamlandı. Yeni resim aşağıdadır.", "ai");
-                    return;
-                }
-
-                // 3) Direkt base64 döndürülmüş olabilir (data.image)
-                const alt = data.image || data.result;
-                if (alt) {
-                    aiResultImg.src = alt.startsWith('data:') ? alt : ("data:image/png;base64," + alt);
-                    aiResultImg.style.display = 'block';
-                    saveAiResultBtn.style.display = 'block';
-                    addMessage("Düzenleme tamamlandı. Yeni resim aşağıdadır.", "ai");
-                    return;
-                }
-
-                addMessage("API'den beklenmeyen sonuç döndü. Konsolu kontrol et.", "ai");
-                console.error('API response:', data);
-            } else {
-                const errMsg = data.error?.message || JSON.stringify(data);
-                addMessage(`Hata: ${errMsg}`, "ai");
-            }
-
-        } catch (error) {
-            addMessage(`Beklenmedik bir hata oluştu: ${error.message}`, "ai");
-            console.error(error);
-        } finally {
-            sendPromptBtn.disabled = false;
-        }
-    }
-
-    sendPromptBtn.addEventListener('click', () => {
-        const prompt = aiPromptInput.value.trim();
-        if (prompt) {
-            addMessage(prompt, "user");
-            sendImageEditRequest(prompt);
-            aiPromptInput.value = '';
-        }
-    });
-
-    aiPromptInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendPromptBtn.click();
-        }
-    });
-
-    // Yeni AI sonucunu kaydetme işlevi
-    saveAiResultBtn.addEventListener('click', () => {
-        if (aiResultImg.src) {
-            const a = document.createElement('a');
-            a.href = aiResultImg.src;
-            a.download = 'ai_duzenlenmis_resim.png';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-    });
-    </script>
 </body>
 </html>
